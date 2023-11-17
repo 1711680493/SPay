@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="22dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/record_statis_today"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="22dp"
+            android:background="@drawable/record_statis_today_background">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/record_statis_today_amount"
+                    android:textSize="16sp"
+                    android:textColor="#232323"/>
+
+                <TextView
+                    android:id="@+id/rsTodayAmountText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="￥0.00"
+                    android:textSize="20sp"
+                    android:textColor="@color/black"/>
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="#0F000000"/>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/record_statis_today_num"
+                    android:textSize="16sp"
+                    android:textColor="#232323"/>
+
+                <TextView
+                    android:id="@+id/rsTodayNumText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="20sp"
+                    android:textColor="@color/black"/>
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="#0F000000"/>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/record_statis_today_success_num"
+                    android:textSize="16sp"
+                    android:textColor="#232323"/>
+
+                <TextView
+                    android:id="@+id/rsTodaySuccessNumText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textSize="20sp"
+                    android:textColor="@color/black"/>
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- 按钮列表 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="12dp">
+
+            <Button
+                android:id="@+id/rsModeBtn"
+                android:layout_width="70dp"
+                android:layout_height="wrap_content"
+                android:text="@string/record_statis_mode_all" />
+
+            <Button
+                android:id="@+id/rsUpBtn"
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:text="@string/record_statis_up"
+                android:layout_marginLeft="6dp"/>
+            <Button
+                android:id="@+id/rsNextBtn"
+                android:layout_width="50dp"
+                android:layout_height="wrap_content"
+                android:text="@string/record_statis_next"
+                android:layout_marginLeft="6dp"/>
+
+            <Button
+                android:id="@+id/rsClearBtn"
+                android:layout_width="70dp"
+                android:layout_height="wrap_content"
+                android:text="@string/record_statis_clear"
+                android:layout_marginLeft="6dp"/>
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
+            <TextView
+                android:id="@+id/rsPageText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="第0页"
+                android:textSize="14sp"/>
+        </LinearLayout>
+
+        <ListView
+            android:id="@+id/rsList"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+    </LinearLayout>
+
+</LinearLayout>
