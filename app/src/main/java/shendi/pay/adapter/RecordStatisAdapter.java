@@ -38,6 +38,8 @@ public class RecordStatisAdapter extends ArrayAdapter<NotifyPay> {
         ((TextView) view.findViewById(R.id.rsiContentText)).setText(np.getContent());
         if (np.getState() == 0) {
             ((TextView) view.findViewById(R.id.rsiReasonText)).setText(np.getReason());
+        } else {
+            ((TextView) view.findViewById(R.id.rsiReasonText)).setVisibility(View.INVISIBLE);
         }
         ((TextView) view.findViewById(R.id.rsiTypeText)).setText(np.getType());
         ((TextView) view.findViewById(R.id.rsiTimeText)).setText(TimeUtils.getFormatTime().getString(np.getTime()));
