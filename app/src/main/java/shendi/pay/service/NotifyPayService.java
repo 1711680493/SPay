@@ -19,6 +19,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 
+import java.math.BigDecimal;
 import java.util.Set;
 
 import shendi.pay.Application;
@@ -94,16 +95,16 @@ public class NotifyPayService extends NotificationListenerService {
         }
 
         // 检验是否为支付通知
-        String infoStr = Application.getInstance().getBaseStore().getString("info", null);
-        String priKey = Application.getInstance().getBaseStore().getString("priKey", null);
-        if (infoStr == null || priKey == null) {
+        JSONObject info = Application.getInstance().getBasicInfo();
+        String priKey = Application.getInstance().getBasicPriKey(null);
+        if (info == null || priKey == null) {
             // 如果标题是当前标题，那么就不发送通知，否则会导致死循环
             Application.getInstance().sendNotify(NOTIFY_TITLE_DISPOSE_ERR, "没有配置基础信息或密钥,无法处理通知");
             return;
         }
 
         try {
-            JSONObject result = getNotifyPayStr(packName, title, content, infoStr);
+            JSONObject result = getNotifyPayStr(packName, title, content, info);
             if (result == null) return;
 
             int amount = result.getIntValue("amount");
@@ -147,11 +148,10 @@ public class NotifyPayService extends NotificationListenerService {
      * @param packName  包名
      * @param title     通知标题
      * @param content   通知内容
-     * @param infoStr   获取通知金额的规则字符串
+     * @param infoObj   获取通知金额的规则字符串
      * @return JSON包含需要的信息amount,purl,type，空代表非支付通知
      */
-    private JSONObject getNotifyPayStr(String packName, String title, String content, String infoStr) {
-        JSONObject infoObj = JSON.parseObject(infoStr);
+    private JSONObject getNotifyPayStr(String packName, String title, String content, JSONObject infoObj) {
         JSONObject payObj = infoObj.getJSONObject("paystr");
         Set<String> poKeys = payObj.keySet();
         for (String poKey : poKeys) {
@@ -200,7 +200,7 @@ public class NotifyPayService extends NotificationListenerService {
                         // 能转换数字类型成功则代表是金额
                         int amount = 0;
                         try {
-                            amount = (int) (Double.parseDouble(amountStr) * 100);
+                            amount = new BigDecimal(amountStr).multiply(BigDecimal.valueOf(100)).intValue();
 
                             JSONObject result = new JSONObject(3);
                             result.put("amount", amount);

@@ -11,6 +11,9 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+
 import shendi.pay.Application;
 import shendi.pay.R;
 import shendi.pay.SLog;
@@ -49,19 +52,22 @@ public class SettingActivity extends AppCompatActivity {
     private void initUI() {
         // 基础信息
         settingBaseUrlEdit = findViewById(R.id.settingBaseUrlEdit);
-        settingBaseUrlEdit.setText(Application.getInstance().getBaseStore().getString("infoUrl", ""));
+        settingBaseUrlEdit.setText(Application.getInstance().getBasicInfoUrl(""));
         findViewById(R.id.settingBaseBtn).setOnClickListener((v) -> {
-            ApiUtil.baseConfig(settingBaseUrlEdit.getText().toString(), (res) -> {
+            String url = settingBaseUrlEdit.getText().toString();
+            ApiUtil.baseConfig(url, (res) -> {
                 String code = res.getString("code");
                 if ("10000".equals(code)) {
-                    Application.getInstance().getBaseStore().edit()
-                            .putString("infoUrl", settingBaseUrlEdit.getText().toString())
-                            .putString("info", res.getString("msg"))
-                            .apply();
+                    try {
+                        JSONObject info = JSON.parseObject(res.getString("msg"));
+                        Application.getInstance().setBasicInfoUrl(url, info);
 
-                    settingCurText.post(() -> {
-                        settingCurText.setText(Application.getInstance().getBaseStore().getString("info", ""));
-                    });
+                        settingCurText.post(() -> {
+                            settingCurText.setText(info.toString());
+                        });
+                    } catch (Exception e) {
+                        Application.showToast(this, "基础信息非JSON，转换出错：" + e.getMessage(), Toast.LENGTH_LONG);
+                    }
                 } else {
                     Application.showToast(this, "接口调用失败，错误码：" + code, Toast.LENGTH_SHORT);
                 }
@@ -72,16 +78,15 @@ public class SettingActivity extends AppCompatActivity {
 
         // 密钥
         settingKeyEdit = findViewById(R.id.settingKeyEdit);
-        settingKeyEdit.setText(Application.getInstance().getBaseStore().getString("priKey", ""));
+        settingKeyEdit.setText(Application.getInstance().getBasicPriKey(""));
         findViewById(R.id.settingKeyBtn).setOnClickListener((v) -> {
-            Application.getInstance().getBaseStore().edit()
-                    .putString("priKey", settingKeyEdit.getText().toString())
-                    .apply();
+            Application.getInstance().setBasicPriKey(settingKeyEdit.getText().toString());
         });
 
         // 当前基础信息
         settingCurText = findViewById(R.id.settingCurText);
-        settingCurText.setText(Application.getInstance().getBaseStore().getString("info", ""));
+        JSONObject basicInfo = Application.getInstance().getBasicInfo();
+        settingCurText.setText(basicInfo == null ? "" : basicInfo.toString());
     }
 
     @Override

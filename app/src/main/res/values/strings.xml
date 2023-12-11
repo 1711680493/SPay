@@ -34,11 +34,22 @@
     <string name="record_statis_today">今日数据</string>
     <string name="record_statis_next">下</string>
     <string name="record_statis_up">上</string>
-    <string name="record_statis_mode_all">全部</string>
-    <string name="record_statis_mode_fail">失败</string>
+    <string name="record_statis_filter">筛选</string>
     <string name="record_statis_today_amount">收款金额</string>
     <string name="record_statis_today_num">收款笔数</string>
     <string name="record_statis_today_success_num">成功笔数</string>
     <string name="record_statis_clear">清空</string>
     <string name="interface_pay_useconfig_btn">使用配置测试</string>
+    <string name="cancel">取消</string>
+    <string name="filter">筛选</string>
+    <string name="state">状态</string>
+    <string name="type">类型</string>
+    <string name="start_date">起始日期</string>
+    <string name="end_date">截止日期</string>
+
+    <string-array name="drs_state">
+        <item>全部</item>
+        <item>成功</item>
+        <item>失败</item>
+    </string-array>
 </resources>

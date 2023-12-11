@@ -2,9 +2,11 @@ package shendi.pay.activity;
 
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
@@ -15,6 +17,9 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import shendi.kit.time.TimeUtils;
 import shendi.pay.Application;
@@ -38,16 +43,25 @@ public class RecordStatisActivity extends AppCompatActivity {
                      rsTodaySuccessNumText;
 
     // 按钮与列表
-    private Button rsModeBtn;
+    private Button rsFilterBtn;
     private TextView rsPageText;
     private ListView rsList;
     private RecordStatisAdapter rsAdapter;
 
-    /** 当前查询模式,0全部,1失败 */
-    private int mode = 0;
+    /** 过滤的对话框 */
+    private AlertDialog filterDialog;
 
     /** 当前页数 */
     private int pageNum = 0;
+    /** 一页数量 */
+    private int pageCount = 50;
+
+    /** 筛选的条件 */
+    private NotifyPay dataFilter = new NotifyPay();
+    /** 筛选的字符串,缓存 */
+    private StringBuilder filterSql = new StringBuilder();
+    /** 筛选的对象,缓存 */
+    private String[] filterArgs = new String[0];
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -94,6 +108,24 @@ public class RecordStatisActivity extends AppCompatActivity {
         }
         cursor.close();
 
+        // 构建对话框
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        LayoutInflater inflater = this.getLayoutInflater();
+
+        builder.setView(inflater.inflate(R.layout.dialog_record_statis, null))
+            .setPositiveButton(R.string.filter, new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int id) {
+
+                }
+            })
+            .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int id) {
+                    filterDialog.cancel();
+                }
+            });
+        filterDialog = builder.create();
+
         // 按钮与列表
         rsPageText = findViewById(R.id.rsPageText);
         rsList = findViewById(R.id.rsList);
@@ -114,16 +146,10 @@ public class RecordStatisActivity extends AppCompatActivity {
         });
         toPage(0);
 
-        findViewById(R.id.rsModeBtn).setOnClickListener((v) -> {
-            if (mode == 0) {
-                mode = 1;
-                ((Button) v).setText(R.string.record_statis_mode_fail);
-            } else {
-                mode = 0;
-                ((Button) v).setText(R.string.record_statis_mode_all);
-            }
-
-            toPage(0);
+        findViewById(R.id.rsFilterBtn).setOnClickListener((v) -> {
+            // 显示弹窗
+            filterDialog.show();
+//            toPage(0);
         });
 
         findViewById(R.id.rsNextBtn).setOnClickListener((v) -> {
@@ -156,14 +182,11 @@ public class RecordStatisActivity extends AppCompatActivity {
         this.pageNum = pageNum;
         rsAdapter.clear();
 
-        String sql;
-        if (mode == 0) {
-            sql = "SELECT * FROM notify_pay ORDER BY id DESC LIMIT 50 OFFSET " + (pageNum * 50);
-        } else {
-            sql = "SELECT * FROM notify_pay WHERE state=0 ORDER BY id DESC LIMIT 50 OFFSET " + (pageNum * 50);
-        }
+        StringBuilder sql = new StringBuilder();
+        sql.append("SELECT * FROM notify_pay").append(filterSql)
+            .append(" ORDER BY id DESC LIMIT ").append(pageCount).append(" OFFSET ").append(pageNum * pageCount);
 
-        Cursor cursor = Application.spaySql.openReadLink().rawQuery(sql, null);
+        Cursor cursor = Application.spaySql.openReadLink().rawQuery(sql.toString(), filterArgs);
         while (cursor.moveToNext()) {
             NotifyPay np = new NotifyPay();
             np.setId(cursor.getLong(cursor.getColumnIndex("id")));
@@ -182,6 +205,39 @@ public class RecordStatisActivity extends AppCompatActivity {
         rsPageText.post(() -> {
             rsPageText.setText("第" + (pageNum+1) + "页");
         });
+    }
+
+    /**
+     * 组装用于过滤的sql,携带WHERE.
+     * @return 组装后的sql字符串
+     */
+    private StringBuilder filterSql() {
+        StringBuilder sql = new StringBuilder();
+
+        // 状态，类型，日期区间
+        if (dataFilter.getState() != null) sql.append(" AND state=?");
+        if (dataFilter.getType() != null) sql.append(" AND type=?");
+        if (dataFilter.sTime != null) sql.append(" AND time>=?");
+        if (dataFilter.eTime != null) sql.append(" AND time<=?");
+
+        if (sql.length() != 0) sql.insert(0, " WHERE");
+        return sql;
+    }
+
+    /**
+     * 组装用于过滤的内容列表
+     * @return 列表
+     */
+    private List<String> filterList() {
+        List<String> list = new ArrayList<>();
+
+        // 状态，类型，日期区间
+        if (dataFilter.getState() != null) list.add(String.valueOf(dataFilter.getState()));
+        if (dataFilter.getType() != null) list.add(dataFilter.getType());
+        if (dataFilter.sTime != null) list.add(String.valueOf(dataFilter.sTime));
+        if (dataFilter.eTime != null) list.add(String.valueOf(dataFilter.eTime));
+
+        return list;
     }
 
     @Override

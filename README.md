@@ -94,13 +94,15 @@ https://pay.sdpro.top/spay.html
 ```json
 {
     // 状态码,10000为成功
-    code : "10000",
+    "code" : "10000",
     // 数据,获取成功则为下方数据,失败则为错误提示.
-    msg : {
+    "msg" : {
         // 确认字符串为支付字符串的配置
-        paystr : {
+        "paystr" : {
             // 格式为 类型:内容，下方是微信的示例
             "微信" : {
+                // v1.0.1新增，是否上交服务器，默认true
+                "isUp" : true,
                 // app包名,数组中的都将匹配
                 "packName" : ["com.tencent.mm"],
                 // 匹配通知与截取金额的信息列表
@@ -124,7 +126,7 @@ https://pay.sdpro.top/spay.html
                 ]
             }
         },
-        purl : "支付回调接口的地址"
+        "purl" : "支付回调接口的地址"
     }
 }
 ```
@@ -156,8 +158,8 @@ https://pay.sdpro.top/spay.html
 
 ```json
 {
-    code : "10000",
-    msg : "当code非10000时，此为错误信息，将在APP上可见"
+    "code" : "10000",
+    "msg" : "当code非10000时，此为错误信息，将在APP上可见"
 }
 ```
 

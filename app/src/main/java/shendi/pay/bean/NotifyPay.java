@@ -9,20 +9,25 @@ import shendi.kit.time.TimeUtils;
  */
 public class NotifyPay {
 
-    private long id;
+    private Long id;
     private String title;
     private String content;
     private String type;
-    private long amount;
-    private int state;
+    private Long amount;
+    private Integer state;
     private String reason;
     private long time;
 
-    public long getId() {
+    /** 用于过滤的起始时间 */
+    public Long sTime;
+    /** 用于过滤的截止时间 */
+    public Long eTime;
+
+    public Long getId() {
         return id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -50,19 +55,19 @@ public class NotifyPay {
         this.type = type;
     }
 
-    public long getAmount() {
+    public Long getAmount() {
         return amount;
     }
 
-    public void setAmount(long amount) {
+    public void setAmount(Long amount) {
         this.amount = amount;
     }
 
-    public int getState() {
+    public Integer getState() {
         return state;
     }
 
-    public void setState(int state) {
+    public void setState(Integer state) {
         this.state = state;
     }
 
@@ -74,11 +79,11 @@ public class NotifyPay {
         this.reason = reason;
     }
 
-    public long getTime() {
+    public Long getTime() {
         return time;
     }
 
-    public void setTime(long time) {
+    public void setTime(Long time) {
         this.time = time;
     }
 

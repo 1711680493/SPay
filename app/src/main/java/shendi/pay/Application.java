@@ -13,6 +13,8 @@ import android.widget.Toast;
 
 import androidx.core.app.NotificationManagerCompat;
 
+import com.alibaba.fastjson.JSONObject;
+
 import shendi.pay.activity.TestActivity;
 import shendi.pay.util.SQLiteUtil;
 
@@ -39,6 +41,14 @@ public class Application extends android.app.Application {
 
     // 广播字符串
     public static final String RECEIVE_TEST = "shendi.pay.receive.TestReceive";
+
+    // SP BaseStore 部分
+    /** 获取配置信息的URL地址 */
+    private String basicInfoUrl;
+    /** 用于验证的密钥 */
+    private String basicPriKey;
+    /** 从网络上获取的配置信息 */
+    private JSONObject basicInfo;
 
     @Override
     public void onCreate() {
@@ -129,4 +139,43 @@ public class Application extends android.app.Application {
         log.i("发送了通知,title=[" + title + "],content=[" + content + "]");
     }
 
+
+    // SP BaseStore 部分
+    /**
+     * 获取配置信息的URL地址
+     * @param defVal 为空则默认值
+     */
+    public String getBasicInfoUrl(String defVal) {
+        return basicInfoUrl == null ? defVal : basicInfoUrl;
+    }
+    /**
+     * 设置配置信息的URL与URL对应的具体信息
+     * @param infoUrl url地址
+     * @param info    具体信息
+     */
+    public void setBasicInfoUrl(String infoUrl, JSONObject info) {
+        getBaseStore().edit()
+            .putString("infoUrl", infoUrl)
+            .putString("info", info.toString())
+            .apply();
+        this.basicInfoUrl = infoUrl;
+        this.basicInfo = info;
+    }
+
+    /** 用于验证的密钥 */
+    public String getBasicPriKey(String defVal) {
+        return basicPriKey == null ? defVal : basicPriKey;
+    }
+    /** 用于验证的密钥 */
+    public void setBasicPriKey(String basicPriKey) {
+        getBaseStore().edit()
+            .putString("priKey", basicPriKey)
+            .apply();
+        this.basicPriKey = basicPriKey;
+    }
+
+    /** 从网络上获取的配置信息 */
+    public JSONObject getBasicInfo() {
+        return basicInfo;
+    }
 }
