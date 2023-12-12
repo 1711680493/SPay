@@ -120,18 +120,22 @@ public class NotifyPayService extends NotificationListenerService {
             long insertId = db.insert("notify_pay", null, sqlValues);
 
             // 调用支付回调接口
-            ApiUtil.pay(result.getString("purl"), priKey, amount, type, time, (res) -> {
-                String code = res.getString("code");
-                if ("10000".equals(code)) {
-                    db.execSQL("UPDATE notify_pay SET state=1 WHERE id=?", new Object[] {insertId});
-                } else {
-                    StringBuilder reason = new StringBuilder();
-                    reason.append(code).append(" - ").append(res.getString("msg"));
-                    db.execSQL("UPDATE notify_pay SET reason=? WHERE id=?", new Object[] {reason, insertId});
-                }
-            }, (err) -> {
-                db.execSQL("UPDATE notify_pay SET reason=? WHERE id=?", new Object[] {err.getString("errMsg"), insertId});
-            });
+            if (result.getBooleanValue("isUp")) {
+                ApiUtil.pay(result.getString("purl"), priKey, amount, type, time, (res) -> {
+                    String code = res.getString("code");
+                    if ("10000".equals(code)) {
+                        db.execSQL("UPDATE notify_pay SET state=1 WHERE id=?", new Object[]{insertId});
+                    } else {
+                        StringBuilder reason = new StringBuilder();
+                        reason.append(code).append(" - ").append(res.getString("msg"));
+                        db.execSQL("UPDATE notify_pay SET reason=? WHERE id=?", new Object[]{reason, insertId});
+                    }
+                }, (err) -> {
+                    db.execSQL("UPDATE notify_pay SET reason=? WHERE id=?", new Object[]{err.getString("errMsg"), insertId});
+                });
+            } else {
+                db.execSQL("UPDATE notify_pay SET state=1 WHERE id=?", new Object[]{insertId});
+            }
         } catch (Exception e) {
             e.printStackTrace();
             Application.getInstance().sendNotify(NOTIFY_TITLE_DISPOSE_ERR, "处理出错：" + e.getMessage());
@@ -144,7 +148,7 @@ public class NotifyPayService extends NotificationListenerService {
      * @param title     通知标题
      * @param content   通知内容
      * @param infoObj   获取通知金额的规则字符串
-     * @return JSON包含需要的信息amount,purl,type，空代表非支付通知
+     * @return JSON包含需要的信息amount,purl,type,isUp，空代表非支付通知
      */
     private JSONObject getNotifyPayStr(String packName, String title, String content, JSONObject infoObj) {
         JSONObject payObj = infoObj.getJSONObject("paystr");
@@ -197,10 +201,12 @@ public class NotifyPayService extends NotificationListenerService {
                         try {
                             amount = new BigDecimal(amountStr).multiply(BigDecimal.valueOf(100)).intValue();
 
-                            JSONObject result = new JSONObject(3);
+                            JSONObject result = new JSONObject(4);
                             result.put("amount", amount);
                             result.put("type", poKey);
                             result.put("purl", infoObj.getString("purl"));
+                            // 是否上传
+                            result.put("isUp", poVal.containsKey("isUp") ? poVal.getBooleanValue("isUp") : true);
 
                             return result;
                         } catch (Exception e) {
