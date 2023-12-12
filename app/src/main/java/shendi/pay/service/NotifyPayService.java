@@ -1,6 +1,5 @@
 package shendi.pay.service;
 
-import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -11,13 +10,11 @@ import android.os.Build;
 import android.os.Bundle;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
-import android.widget.Toast;
 
 import androidx.core.app.NotificationCompat;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 
 import java.math.BigDecimal;
 import java.util.Set;
@@ -25,8 +22,6 @@ import java.util.Set;
 import shendi.pay.Application;
 import shendi.pay.R;
 import shendi.pay.SLog;
-import shendi.pay.activity.MainActivity;
-import shendi.pay.activity.TestActivity;
 import shendi.pay.util.ApiUtil;
 
 /**

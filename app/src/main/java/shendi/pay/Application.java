@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -13,9 +12,11 @@ import android.widget.Toast;
 
 import androidx.core.app.NotificationManagerCompat;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson2.JSON;
 
-import shendi.pay.activity.TestActivity;
+import java.util.TimeZone;
+
 import shendi.pay.util.SQLiteUtil;
 
 /**
@@ -54,6 +55,23 @@ public class Application extends android.app.Application {
     public void onCreate() {
         super.onCreate();
         instance = this;
+
+        // 设置默认时区
+        TimeZone.setDefault(TimeZone.getTimeZone("GMT+08:00"));
+
+        // 初始化基础信息
+        SharedPreferences baseStore = getBaseStore();
+        basicInfoUrl = baseStore.getString("infoUrl", null);
+        String basicInfoStr = baseStore.getString("info", null);
+        if (basicInfoStr != null) {
+            try {
+                basicInfo = JSON.parseObject(basicInfoStr);
+            } catch (Exception e) {
+                log.w("基础信息中 info 非JSONObject");
+                sendNotify("基础信息 info 非JSONObject", basicInfoUrl);
+            }
+        }
+        basicPriKey = baseStore.getString("priKey", null);
 
         spaySql = SQLiteUtil.getInstance(this);
     }
