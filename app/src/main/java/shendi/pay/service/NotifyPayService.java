@@ -13,8 +13,8 @@ import android.service.notification.StatusBarNotification;
 
 import androidx.core.app.NotificationCompat;
 
-import com.alibaba.fastjson2.JSONArray;
-import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 import java.math.BigDecimal;
 import java.util.Set;
@@ -169,6 +169,14 @@ public class NotifyPayService extends NotificationListenerService {
                     }
                     for (int i = 0; i < list.size(); i++) {
                         JSONObject item = list.getJSONObject(i);
+
+                        // 校验是否可以匹配
+                        String checkTitle = item.getString("checkTitle");
+                        String checkContent = item.getString("checkContent");
+                        if ((checkTitle != null && !title.contains(checkTitle))
+                                || (checkContent != null && !content.contains(checkContent))) {
+                            continue;
+                        }
 
                         // 金额在标题还是在内容
                         boolean isTitle = item.getBooleanValue("isTitle");

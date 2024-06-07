@@ -1,6 +1,6 @@
 package shendi.pay.util;
 
-import com.alibaba.fastjson2.JSONObject;
+import com.alibaba.fastjson.JSONObject;
 
 import java.net.URLEncoder;
 import java.util.Map;
@@ -11,7 +11,6 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
-import shendi.pay.Application;
 import shendi.pay.SLog;
 
 /**

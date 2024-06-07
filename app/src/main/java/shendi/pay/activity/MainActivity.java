@@ -4,14 +4,10 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 
-import androidx.annotation.Nullable;
-import androidx.core.app.NotificationManagerCompat;
-
 import shendi.pay.Application;
 import shendi.pay.R;
 import shendi.pay.SLog;
 import shendi.pay.service.NotifyPayService;
-import shendi.pay.util.ApiUtil;
 
 /**
  * 创建时间：2023/11/8

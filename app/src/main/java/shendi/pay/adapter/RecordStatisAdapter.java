@@ -9,8 +9,6 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 
-import java.util.List;
-
 import shendi.kit.time.TimeUtils;
 import shendi.pay.R;
 import shendi.pay.bean.NotifyPay;
