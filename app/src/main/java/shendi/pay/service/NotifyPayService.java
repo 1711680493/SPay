@@ -165,7 +165,7 @@ public class NotifyPayService extends NotificationListenerService {
                     JSONArray list = poVal.getJSONArray("list");
                     if (list == null) {
                         Application.getInstance().sendNotify(NOTIFY_TITLE_DISPOSE_ERR, "配置的基础信息中，list为空, 类型=" + poKey);
-                        return null;
+                        continue;
                     }
                     for (int i = 0; i < list.size(); i++) {
                         JSONObject item = list.getJSONObject(i);
@@ -175,6 +175,7 @@ public class NotifyPayService extends NotificationListenerService {
                         String checkContent = item.getString("checkContent");
                         if ((checkTitle != null && !title.contains(checkTitle))
                                 || (checkContent != null && !content.contains(checkContent))) {
+                            log.i("通知不匹配");
                             continue;
                         }
 
@@ -189,19 +190,25 @@ public class NotifyPayService extends NotificationListenerService {
                         boolean isStart = "".equals(start), isEnd = "".equals(end);
                         if (isStart && isEnd) {
                             Application.getInstance().sendNotify(NOTIFY_TITLE_DISPOSE_ERR, "配置的基础信息中，content部分键与值都为''");
-                            return null;
+                            continue;
                         }
 
                         int startIndex = isStart ? 0 : dataStr.indexOf(start);
-                        if (startIndex == -1) return null;
+                        if (startIndex == -1) continue;
                         else startIndex += start.length();
 
                         String startStr = dataStr.substring(startIndex);
-                        int endIndex = isEnd ? dataStr.length() : startStr.indexOf(end);
-                        if (endIndex == -1) return null;
-                        else endIndex += startIndex;
 
-                        String amountStr = dataStr.substring(startIndex, endIndex);
+                        String amountStr;
+                        if (isEnd) {
+                            amountStr = startStr;
+                        } else {
+                            int endIndex = startStr.indexOf(end);
+                            if (endIndex == -1) continue;
+
+                            amountStr = startStr.substring(0, endIndex);
+                        }
+
                         log.i("截取的金额为：" + amountStr);
 
                         // 能转换数字类型成功则代表是金额
@@ -219,7 +226,7 @@ public class NotifyPayService extends NotificationListenerService {
                             return result;
                         } catch (Exception e) {
                             log.i("非支付通知，金额非数字: " + amountStr);
-                            return null;
+                            continue;
                         }
                     }
                 }
