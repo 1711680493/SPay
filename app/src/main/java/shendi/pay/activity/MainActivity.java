@@ -5,8 +5,10 @@ import android.content.Intent;
 import android.os.Bundle;
 
 import shendi.pay.Application;
+import shendi.pay.Permission;
 import shendi.pay.R;
 import shendi.pay.SLog;
+import shendi.pay.service.MyAccessibilityService;
 import shendi.pay.service.NotifyPayService;
 
 /**
@@ -26,9 +28,19 @@ public class MainActivity extends Activity {
 
         //启动服务
         startForegroundService(new Intent(this, NotifyPayService.class));
+    }
 
-        // 检验是否开通通知权限
-        Application.getInstance().checkNotify(this);
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        // 校验权限是否开通
+        Permission.notify(this);
+        Permission.notifyListener(this);
+
+        if (Application.getInstance().getBasicAccessibility()) {
+            Permission.accessibility(this);
+        }
     }
 
     private void initUI() {

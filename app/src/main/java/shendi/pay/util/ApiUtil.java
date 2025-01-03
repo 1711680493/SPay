@@ -11,6 +11,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import shendi.pay.Application;
 import shendi.pay.SLog;
 
 /**
@@ -78,11 +79,24 @@ public class ApiUtil {
         JSONObject obj = new JSONObject();
         obj.put("url", url);
         obj.put("type", "POST");
+
         JSONObject param = new JSONObject();
         param.put("amount", amount);
         param.put("type", type);
         param.put("priKey", priKey);
         param.put("time", time);
+        // 自定义参数
+        String customParam = Application.getInstance().getBasicCustomParam(null);
+        if (customParam != null) {
+            String[] kvs = customParam.split("&");
+            for (String kvStr : kvs) {
+                String[] kv = kvStr.split("=");
+                if (kv.length == 2) {
+                    param.put(kv[0], kv[1]);
+                }
+            }
+        }
+
         obj.put("param", param);
         obj.put("success", success);
         obj.put("fail", fail);

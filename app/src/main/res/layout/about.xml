@@ -12,8 +12,8 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="APP仅供学习交流使用\n\n开源地址：\nhttps://github.com/1711680493/SPay\n"
-        android:textColor="@color/black"
+        android:text="APP仅供学习交流使用\n\n开源地址：\nhttps://github.com/1711680493/SPay\nhttps://gitee.com/hackshendi/SPay\n"
+        android:textColor="@color/purple_700"
         android:gravity="center"
         android:layout_marginBottom="100dp"
         android:textIsSelectable="true"

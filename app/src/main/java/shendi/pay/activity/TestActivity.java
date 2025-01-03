@@ -28,6 +28,7 @@ import com.alibaba.fastjson.JSONObject;
 import java.util.Date;
 
 import shendi.pay.Application;
+import shendi.pay.Permission;
 import shendi.pay.R;
 import shendi.pay.SLog;
 import shendi.pay.util.ApiUtil;
@@ -168,7 +169,7 @@ public class TestActivity extends AppCompatActivity {
         // 发送通知
         findViewById(R.id.testNotifySendBtn).setOnClickListener((v) -> {
             // 检验是否开通通知权限
-            Application.getInstance().checkNotify(this);
+            Permission.notify(this);
 
             Application.getInstance().sendNotify(testNotifyTitleEdit.getText().toString(), testNotifyContentEdit.getText().toString());
         });

@@ -19,9 +19,11 @@ import com.alibaba.fastjson.JSONObject;
 import java.math.BigDecimal;
 import java.util.Set;
 
+import shendi.kit.time.TimeUtils;
 import shendi.pay.Application;
 import shendi.pay.R;
 import shendi.pay.SLog;
+import shendi.pay.util.ApiExecUtil;
 import shendi.pay.util.ApiUtil;
 
 /**
@@ -33,7 +35,7 @@ public class NotifyPayService extends NotificationListenerService {
 
     private static SLog log = SLog.getLogger(NotifyPayService.class.getName());
 
-    private static final String NOTIFY_TITLE_DISPOSE_ERR = "监听处理失败";
+    public static final String NOTIFY_TITLE_DISPOSE_ERR = "监听处理失败";
 
     @Override
     public void onCreate() {
@@ -42,15 +44,16 @@ public class NotifyPayService extends NotificationListenerService {
         // 适配8.0及以上,创建渠道
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-            nm.createNotificationChannel(new NotificationChannel(Application.NOTIFY_CHANNEL_ID_PAY, Application.NOTIFY_CHANNEL_ID_PAY, NotificationManager.IMPORTANCE_MIN));
+            nm.createNotificationChannel(new NotificationChannel(Application.NOTIFY_CHANNEL_ID_PAY, Application.NOTIFY_CHANNEL_ID_PAY, NotificationManager.IMPORTANCE_LOW));
         }
 
         // 前台服务
         startForeground(1, new NotificationCompat.Builder(this, Application.NOTIFY_CHANNEL_ID_PAY)
                 .setSmallIcon(R.drawable.logo)
-                .setContentTitle("SPay服务")
+                .setContentTitle("SPay监听通知服务")
                 .setContentText("安稳运行中...")
                 .setWhen(System.currentTimeMillis())
+                .setOngoing(true)
                 .build());
 
         log.i("监听通知服务启动");
@@ -84,8 +87,8 @@ public class NotifyPayService extends NotificationListenerService {
             sendBroadcast(intent);
         }
 
-        // 如果是本APP的错误通知，那么不做处理，避免死循环
-        if (getPackageName().equals(packName) && NOTIFY_TITLE_DISPOSE_ERR.equals(title)) {
+        // 如果是本APP的错误通知或者服务运行通知，那么不做处理，避免死循环
+        if (getPackageName().equals(packName) && (NOTIFY_TITLE_DISPOSE_ERR.equals(title) || "安稳运行中...".equals(content))) {
             return;
         }
 
@@ -105,41 +108,26 @@ public class NotifyPayService extends NotificationListenerService {
             int amount = result.getIntValue("amount");
             String type = result.getString("type");
 
-            long time = System.currentTimeMillis();
+            ApiExecUtil.pay(title, content, result.getBooleanValue("isUp"), result.getString("purl"), priKey, amount, type);
 
-            // 加入数据库
-            SQLiteDatabase db = Application.spaySql.openWriteLink();
-
-            ContentValues sqlValues = new ContentValues();
-            sqlValues.put("title", title);
-            sqlValues.put("content", content);
-            sqlValues.put("type", type);
-            sqlValues.put("amount", amount);
-            sqlValues.put("time", time);
-
-            long insertId = db.insert("notify_pay", null, sqlValues);
-
-            // 调用支付回调接口
-            if (result.getBooleanValue("isUp")) {
-                ApiUtil.pay(result.getString("purl"), priKey, amount, type, time, (res) -> {
-                    String code = res.getString("code");
-                    if ("10000".equals(code)) {
-                        db.execSQL("UPDATE notify_pay SET state=1 WHERE id=?", new Object[]{insertId});
-                    } else {
-                        StringBuilder reason = new StringBuilder();
-                        reason.append(code).append(" - ").append(res.getString("msg"));
-                        db.execSQL("UPDATE notify_pay SET reason=? WHERE id=?", new Object[]{reason, insertId});
-                    }
-                }, (err) -> {
-                    db.execSQL("UPDATE notify_pay SET reason=? WHERE id=?", new Object[]{err.getString("errMsg"), insertId});
-                });
-            } else {
-                db.execSQL("UPDATE notify_pay SET state=1 WHERE id=?", new Object[]{insertId});
-            }
+            // 用于无障碍不重复
+            Application.getInstance().setLastUp(packName, TimeUtils.getFormatTime("hour_minute").getString(System.currentTimeMillis()), String.valueOf(amount));
         } catch (Exception e) {
             e.printStackTrace();
             Application.getInstance().sendNotify(NOTIFY_TITLE_DISPOSE_ERR, "处理出错：" + e.getMessage());
         }
+    }
+
+    @Override
+    public void onListenerConnected() {
+        super.onListenerConnected();
+        log.i("监听通知已连接");
+    }
+
+    @Override
+    public void onListenerDisconnected() {
+        super.onListenerDisconnected();
+        log.i("监听通知已断开");
     }
 
     /**
@@ -187,27 +175,23 @@ public class NotifyPayService extends NotificationListenerService {
                         String start = item.getString("start");
                         String end = item.getString("end");
 
-                        boolean isStart = "".equals(start), isEnd = "".equals(end);
-                        if (isStart && isEnd) {
-                            Application.getInstance().sendNotify(NOTIFY_TITLE_DISPOSE_ERR, "配置的基础信息中，content部分键与值都为''");
-                            continue;
+                        if (!"".equals(start)) {
+                            int startIndex = dataStr.indexOf(start);
+
+                            if (startIndex == -1) continue;
+                            else startIndex += start.length();
+
+                            dataStr = dataStr.substring(startIndex);
                         }
 
-                        int startIndex = isStart ? 0 : dataStr.indexOf(start);
-                        if (startIndex == -1) continue;
-                        else startIndex += start.length();
-
-                        String startStr = dataStr.substring(startIndex);
-
-                        String amountStr;
-                        if (isEnd) {
-                            amountStr = startStr;
-                        } else {
-                            int endIndex = startStr.indexOf(end);
+                        if (!"".equals(end)) {
+                            int endIndex = dataStr.indexOf(end);
                             if (endIndex == -1) continue;
 
-                            amountStr = startStr.substring(0, endIndex);
+                            dataStr = dataStr.substring(0, endIndex);
                         }
+
+                        String amountStr = dataStr;
 
                         log.i("截取的金额为：" + amountStr);
 
@@ -221,7 +205,7 @@ public class NotifyPayService extends NotificationListenerService {
                             result.put("type", poKey);
                             result.put("purl", infoObj.getString("purl"));
                             // 是否上传
-                            result.put("isUp", poVal.containsKey("isUp") ? poVal.getBooleanValue("isUp") : true);
+                            result.put("isUp", !poVal.containsKey("isUp") || poVal.getBooleanValue("isUp"));
 
                             return result;
                         } catch (Exception e) {

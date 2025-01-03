@@ -1,15 +1,18 @@
 package shendi.pay;
 
+import android.accessibilityservice.AccessibilityService;
 import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.provider.Settings;
 import android.widget.Toast;
 
+import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 
 import com.alibaba.fastjson.JSON;
@@ -17,6 +20,7 @@ import com.alibaba.fastjson.JSONObject;
 
 import java.util.TimeZone;
 
+import shendi.kit.time.TimeUtils;
 import shendi.pay.util.SQLiteUtil;
 
 /**
@@ -39,6 +43,7 @@ public class Application extends android.app.Application {
 
     public static final String NOTIFY_CHANNEL_ID_TEST = "Test";
     public static final String NOTIFY_CHANNEL_ID_PAY = "Pay";
+    public static final String NOTIFY_CHANNEL_ID_ACCESSIBILITY = "Accessibility";
 
     // 广播字符串
     public static final String RECEIVE_TEST = "shendi.pay.receive.TestReceive";
@@ -48,6 +53,10 @@ public class Application extends android.app.Application {
     private String basicInfoUrl;
     /** 用于验证的密钥 */
     private String basicPriKey;
+    /** 用于无障碍开关 */
+    private boolean basicAccessibility;
+    /** 用于支付回调接口的自定义参数 */
+    private String basicCustomParam;
     /** 从网络上获取的配置信息 */
     private JSONObject basicInfo;
 
@@ -72,8 +81,18 @@ public class Application extends android.app.Application {
             }
         }
         basicPriKey = baseStore.getString("priKey", null);
+        try {
+            basicAccessibility = baseStore.getBoolean("accessibility", true);
+        } catch (Exception e) {
+            log.w("基础信息中无障碍开关信息获取失败");
+            sendNotify("基础信息初始化", "无障碍开关信息获取失败");
+        }
+        basicCustomParam = baseStore.getString("customParam", null);
 
         spaySql = SQLiteUtil.getInstance(this);
+
+        // 时间格式
+        TimeUtils.addTimeFormat("hour_minute", "HH:mm");
     }
 
     /** @return 唯一实例 */
@@ -89,39 +108,29 @@ public class Application extends android.app.Application {
      {
         infoUrl : "获取配置信息的URL地址",
         priKey : "用于验证的密钥",
+        customParam : "支付回调接口的自定义参数",
         // 从网络上获取的配置信息
-        info : {}
+        info : {},
+        accessibility : "无障碍是否打开,boolean"
      }
      */
     public SharedPreferences getBaseStore() {
         return getStore("base");
     }
 
-    /** 是否开通通知权限 */
-    public boolean isNotificationEnabled(Activity context) {
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
-        return notificationManager.areNotificationsEnabled();
-    }
-
-    /** 检验是否开通通知权限，未开通则跳往开通 */
-    public void checkNotify(Activity context) {
-        if (!isNotificationEnabled(context)) {
-            Toast.makeText(context, "请开启通知权限", Toast.LENGTH_SHORT).show();
-
-            Intent intent;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                String packageName = getPackageName();
-                intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-                intent.putExtra(Settings.EXTRA_APP_PACKAGE, packageName);
-                intent.putExtra(Settings.EXTRA_CHANNEL_ID, NOTIFY_CHANNEL_ID_TEST);
-            } else {
-                intent = new Intent("android.settings.APP_NOTIFICATION_SETTINGS");
-                intent.putExtra("app_package", getPackageName());
-                intent.putExtra("app_uid", getApplicationInfo().uid);
-            }
-            context.startActivity(intent);
+    /**
+     * 无障碍使用的最后一次上交服务器信息,根据包名区分.
+     {
+        "包名" : {
+            time : "时间",
+            amount : "金额"
         }
+     }
+     */
+    public SharedPreferences getLastUpStore() {
+        return getStore("lastUp");
     }
+
 
     public static void showToast(Activity context, String text, int duration) {
         new Thread(() -> {
@@ -137,12 +146,12 @@ public class Application extends android.app.Application {
      * @param content   通知内容
      */
     public void sendNotify(String title, String content) {
-        //获取NotifactionManager对象
+        // 获取NotifactionManager对象
         NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
         // 适配8.0及以上,创建渠道
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            nm.createNotificationChannel(new NotificationChannel(Application.NOTIFY_CHANNEL_ID_TEST, Application.NOTIFY_CHANNEL_ID_TEST, NotificationManager.IMPORTANCE_HIGH));
+            nm.createNotificationChannel(new NotificationChannel(Application.NOTIFY_CHANNEL_ID_TEST, Application.NOTIFY_CHANNEL_ID_TEST, NotificationManager.IMPORTANCE_DEFAULT));
         }
 
         //构建一个Notification
@@ -192,8 +201,71 @@ public class Application extends android.app.Application {
         this.basicPriKey = basicPriKey;
     }
 
+    /** 用于无障碍开关 */
+    public boolean getBasicAccessibility() {
+        return basicAccessibility;
+    }
+    /** 用于无障碍开关 */
+    public void setBasicAccessibility(boolean basicAccessibility) {
+        getBaseStore().edit()
+                .putBoolean("accessibility", basicAccessibility)
+                .apply();
+        this.basicAccessibility = basicAccessibility;
+    }
+
+    /** 用于支付回调接口的自定义参数 */
+    public String getBasicCustomParam(String defVal) {
+        return basicCustomParam == null ? defVal : basicCustomParam;
+    }
+    /** 用于验证的密钥 */
+    public void setBasicCustomParam(String basicCustomParam) {
+        getBaseStore().edit()
+                .putString("customParam", basicCustomParam)
+                .apply();
+        this.basicCustomParam = basicCustomParam;
+    }
+
     /** 从网络上获取的配置信息 */
     public JSONObject getBasicInfo() {
         return basicInfo;
     }
+
+    // SP LastUpStore 部分
+
+    /**
+     * 指定包是否存在指定上传信息.
+     * @param packName  包名称
+     * @param time      时间字符串
+     * @param amount    金额
+     * @return 是否存在指定上传信息
+     */
+    public boolean hasLastUp(String packName, String time, String amount) {
+        String val = getLastUpStore().getString(packName, null);
+
+        if (val != null) {
+            try {
+                JSONObject obj = JSONObject.parseObject(val);
+                String objTime = obj.getString("time");
+                String objAmount = obj.getString("amount");
+
+                if (time.equals(objTime) && amount.equals(objAmount)) {
+                    return true;
+                }
+            } catch (Exception e) {}
+        }
+
+        return false;
+    }
+
+    /** 设置最后的上传信息 */
+    public void setLastUp(String packName, String time, String amount) {
+        JSONObject obj = new JSONObject(2);
+        obj.put("time", time);
+        obj.put("amount", amount);
+
+        getLastUpStore().edit()
+                .putString(packName, obj.toString())
+                .apply();
+    }
+
 }

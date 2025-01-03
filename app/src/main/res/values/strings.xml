@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">SPay</string>
+    <string name="accessibility_service_description">开启支付监听后，在没有通知的情况下也可以正常完成上交</string>
     <string name="record_statis">记录与统计</string>
     <string name="setting">设置</string>
     <string name="test">测试</string>
@@ -52,6 +53,11 @@
     <string name="statis">统计</string>
     <string name="confirm">确认</string>
     <string name="drs_input_pay_type">输入支付类型</string>
+    <string name="setting_custom_param">自定义参数配置</string>
+    <string name="setting_custom_param_btn">设置</string>
+    <string name="setting_custom_param_edit">支付回调接口的自定参数</string>
+    <string name="accessibility_service_label">SPay</string>
+    <string name="setting_accessibility">无障碍</string>
 
     <string-array name="drs_state">
         <item>全部</item>
