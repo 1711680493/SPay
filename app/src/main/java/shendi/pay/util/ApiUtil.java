@@ -3,7 +3,11 @@ package shendi.pay.util;
 import com.alibaba.fastjson.JSONObject;
 
 import java.net.URLEncoder;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
+
+import javax.crypto.spec.SecretKeySpec;
 
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
@@ -11,6 +15,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
+import shendi.kit.id.RanId;
 import shendi.pay.Application;
 import shendi.pay.SLog;
 
@@ -83,8 +88,23 @@ public class ApiUtil {
         JSONObject param = new JSONObject();
         param.put("amount", amount);
         param.put("type", type);
-        param.put("priKey", priKey);
         param.put("time", time);
+        String nonce = RanId.ranCodeToString(8);
+        param.put("nonce", nonce);
+
+        // 生成sign
+        StringBuilder data = new StringBuilder();
+        data.append(amount).append(type).append(time).append(nonce);
+        try {
+            param.put("sign", HMACSHA256Util.hmacSHA256(priKey.getBytes(), data.toString().getBytes()));
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            JSONObject error = new JSONObject();
+            error.put("err", e);
+            error.put("errMsg", "sign生成出错：" + e.getMessage());
+            fail.callback(error);
+            return;
+        }
+
         // 自定义参数
         String customParam = Application.getInstance().getBasicCustomParam(null);
         if (customParam != null) {

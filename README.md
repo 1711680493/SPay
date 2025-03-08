@@ -64,11 +64,9 @@ https://pay.sdpro.top/spay.html
 
 # 流程与设计
 
-用户下单，服务端创建订单，用户付款后，APP监听到通知，将金额发送至服务端，服务端进行验证处理。
+用户下单，服务端创建订单，用户付款后，APP监听到通知，将金额等信息发送至服务端，服务端进行验证处理。
 
-在设计上，为了确保安全性，应有验证机制。
-
-验证：生成一串密钥，手动配置到服务端与APP，APP在监听到通知携带此密钥与当前时间戳发送至服务端，服务端验证密钥与时间戳，以确认请求是当前APP，应隔一段时间更新此密钥。
+验证参考 **支付回调接口**
 
 <br>
 
@@ -162,15 +160,62 @@ https://pay.sdpro.top/spay.html
 | ------ | ------------------------------------------------------------ |
 | amount | 金额，单位分（这样不易出现精度丢失问题）                     |
 | type   | 基础信息中匹配的类型，例如 微信                              |
-| priKey | 配置在服务端与APP上的密钥，这是自行生成的                    |
 | time   | 提交此请求的时间戳                                           |
+| nonce  | 随机字符串，可通过与time结合为唯一字符串                     |
+| sign   | 消息认证码                                                   |
 | ...    | 配置中的自定义参数，将直接追加在参数中，格式 `key=val&key=val...`  v1.0.3新增 |
 
 <br>
 
-拿到参数后首先要验证`priKey`与`time`，密钥正确，时间差合理（比如在订单失效期前支付，失效期两分钟，那么设置为两分半即可）则代表此次请求是APP所发送。
+拿到参数后首先要验证`sign`与`time`，`sign` 正确，时间差合理（比如在订单失效期前支付，失效期两分钟，那么设置为两分半即可）则代表此次请求是APP所发送。
 
-而后通过`amount`与`type`来确认对应的订单，完成支付。（如果没有订单那可能代表此请求不是APP所发送，需要记录日志并提醒开发者，让其更新密钥）
+而后通过`amount`与`type`来确认对应的订单，完成支付。（如果没有订单那可能代表此请求不是APP所发送，）
+
+> `sign` 与 `time` 验证不通过则直接验证失败，如果验证成功但没有没有订单，那么同样也返回验证失败，并且需要记录日志并提醒开发者，更新一个更复杂的密钥，不要带多余的信息，防止暴力破解密钥。
+
+> （可选）每次处理完将time与nonce存入数据库，处理前先验证相同的time与nonce是否存在，存在则验证失败，这样可以防止重放攻击，也就减少了密钥被暴力破解的可能
+
+<br>
+
+---
+
+**sign验证方式：**
+
+使用 **HMAC-SHA256** 通过**APP配置的密钥对数据计算出消息认证码**，然后对其**Base64编码**，其中数据是直接转字符串进行相加：`amount+type+time+nonce`
+
+其中密钥自行生成，存储在服务器与APP上配置，不在网络中传输与暴露
+
+**生成代码示例（Java）：**
+
+```java
+public class HMACSHA256Util {
+
+    /**
+     * 根据密钥与数据生成消息认证码
+     * @param priKey    密钥
+     * @param data      数据
+     * @return  消息认证码
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidKeyException
+     */
+    public static String hmacSHA256(byte[] priKey, byte[] data) throws NoSuchAlgorithmException, InvalidKeyException {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(priKey, "HmacSHA256"));
+        return Base64.getEncoder().encodeToString(mac.doFinal(data));
+    }
+
+}
+```
+
+```java
+// 生成sign
+StringBuilder data = new StringBuilder();
+data.append(amount).append(type).append(time).append(nonce);
+
+String sign = HMACSHA256Util.hmacSHA256("密钥".getBytes(), data.toString().getBytes());
+```
+
+---
 
 <br>
 
